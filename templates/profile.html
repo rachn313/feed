@@ -1,0 +1,204 @@
+{% extends "home.html" %}
+
+<!doctype html>
+<html lang='en'>
+<head>
+	{% block head %}
+    <meta charset='utf-8'>
+	<meta name=author content="Rachel Navarrette">
+	<link rel="stylesheet" type="text/css"
+            href="{{url_for('static', filename='home.css')}}">
+	<link rel='stylesheet' href="{{url_for('static', filename = 'profile.css')}}">
+	<link rel="stylesheet" 
+			href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous"><title>{{proName}}</title>
+	
+	{% endblock %}
+	
+    </head>
+
+<header>
+	{% block nav %} 
+            {{super()}}
+
+		{% endblock %}
+		{% block content %}
+
+		
+		<!-- Edit profile form -->
+		
+			
+			<div class="modal fade" id="edit-modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+				<div class="modal-dialog" role="document">
+				  <div class="modal-content">
+					<div class="modal-header">
+					  <h5 class="modal-title" id="exampleModalLabel">Edit Profile</h5>
+					  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						  <span aria-hidden="true">&times;</span>
+						</button>
+					</div>
+
+					<div class="modal-body">
+					<form id="edit-post-form" method=POST action="{{url_for('editProf')}}" enctype=multipart/form-data>
+						<div class="form-group form-inline">
+						  <label>Username</label>
+						  <input type="text" id = "edit-username" class="form-control" name="pname" 
+								value="{{profName}}" maxlength="20" required /> 
+						</div>   
+						<div class="form-group form-inline">
+							<label>Display Name</label>
+							<input type="text" id="edit-displayName" class="form-control" name="displayName" 
+									value="{{fname}}" maxlength="50"> 
+						</div>
+						<div class="form-group form-inline">
+							<label>Bio Text</label>
+							<input type="text" id="edit-bio" class="form-control" name="bioText" 
+									value="{{bio}}" maxlength="350"> 
+						</div>
+						
+						<div>
+							<label for="profile_pic">Upload Profile Picture</label>
+							<input type="file" placeholder="Upload File" name="profpic" > 
+						</div>
+						<button type="submit" class="btn btn-primary"> Edit Profile</button>
+						<button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button> 
+					</form>
+					</div>
+				</div>
+					</div>
+				</div>
+			
+		
+		  
+	<div class="container">
+
+		<div class="profile">
+
+			<div class="profile-image">
+
+				<img src="{{url_for('static', filename = ppic)}}"    alt="profile_pic">
+
+			</div>
+			<!-- Edit profile form -->
+
+			<h1 class="profile-user-name" value="{{profName}}">{{profName}}</h1> 
+			<div class="profile-user-settings">
+			
+			<div> 
+					<button value="{{match}}" id= "editPbutton" data-toggle="modal" data-target="#edit-modal"> Edit Profile</button>
+				</div>
+			</div>
+			
+			
+			<!-- End Edit Profile -->
+
+			<div class="profile-stats">
+
+				<ul>
+					<li><span class="profile-stat-count" id="posts">{{postNum}}</span> posts</li>
+					<li><span class="profile-stat-count" id="followers">{{numFers}}</span> <a href="{{url_for('followersList', username=profName)}}"> followers </a></li>
+					<li><span class="profile-stat-count" id="following">{{numFing}}</span><a href="{{url_for('followingList', username=profName)}}"> following</a> </li>
+				</ul>
+
+			</div>
+
+			<div class="profile-bio">
+				
+				<p><span class="profile-real-name">{{fname}}</span> {{bio}}</p>
+
+			</div> 
+
+			{% if match is sameas false%}
+				
+						<div>
+							<button id="follow-button" class="followButton bouncy">{{tButton}}</button>
+						</div>
+				
+
+			{% endif %}
+
+		</div>
+		<!-- End of profile section -->
+
+	</div>
+	<!-- End of container -->
+
+</header>
+
+<main>
+		{{super()}}
+
+		<!-- End of gallery -->
+
+		
+	<!-- End of container -->
+
+
+</main>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+<script>
+	
+	//hides the edit button if the edit button value is false - meaning that if the profile is not your profile, the edit button shouldn't appear
+	if($("#editPbutton").val() == "False") {
+		
+		$("#editPbutton").hide()
+	}
+	
+	// ajax app routes with username as parameter
+	var URL_add = "{{url_for('aFollow', username=profName)}}" 
+    var URL_delete = "{{url_for('dFollow', username = profName)}}"
+	
+	//if the follow button is clicked, get the text of the button and check if it's set to Follow or unfollow. If follow, set text to following, if its following, set text to follow, then using
+	//ajax it will post the parameter values and return a jsonify that can be accessed through the dictionary key
+	$("#follow-button").on('click', function () {
+		
+        
+        // turn it on
+		var fbuttonText = $("#follow-button").text();
+		if(fbuttonText == "Follow") {
+		
+			$("#follow-button").text('Following');
+			$.post(URL_add, updateAddFollowers)   
+		} 
+		else {
+		    $("#follow-button").text('Follow');
+        	$.post(URL_delete, updateDeleteFollowers)  
+		}
+        
+	});
+	
+	// uses ajax function to update followers and resets the number to the new number
+	function updateAddFollowers(obj) {
+        console.log(obj);
+        if(obj.error) {
+            $("#errors").empty().html('Error: '+obj.err);
+            console.log('obj error')
+        } else {
+            $("#followers").text(obj.updateFollowers);
+			$("#following").text(obj.updateFollowing);
+        }
+	}
+	
+	// uses ajax function to update followers and resets the number to the new number
+	function updateDeleteFollowers(obj) {
+        console.log(obj);
+        if(obj.error) {
+            $("#errors").empty().html('Error: '+obj.err);
+            console.log('obj error')
+        } else {
+            $("#followers").text(obj.updateFollowers);
+			$("#following").text(obj.updateFollowing);
+        }
+    }
+	
+	</script>
+
+<script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-3.4.1.min.js"></script>
+<script src="{{url_for('static',filename='home.js')}}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0-alpha1/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+<script src="https://kit.fontawesome.com/cc5f13310d.js" crossorigin="anonymous"></script>
+	 {% endblock %}
+
+
+    </html>

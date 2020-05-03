@@ -1,0 +1,195 @@
+{% extends "nav.html" %}
+
+<!doctype html>
+<html lang="en">
+    <head>
+        {% block head %}
+        <meta charset="utf-8">
+        <meta name=author content="Sandra Xu">  
+        <title>Home • Feed</title>
+        <link rel="stylesheet" type="text/css"
+              href="{{url_for('static', filename='home.css')}}">
+        <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/bricklayer/0.4.2/bricklayer.min.css">
+        <script src="//cdnjs.cloudflare.com/ajax/libs/bricklayer/0.4.2/bricklayer.min.js"></script>
+        <link rel="stylesheet" 
+              href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+        <script src="https://kit.fontawesome.com/cc5f13310d.js" crossorigin="anonymous"></script>
+        {% endblock %}
+    </head>
+
+    <body>
+
+        {% block options %}
+            {% if options is sameas true %}
+            <div id="options">
+                <span>
+                    <form id="sort-by-form" method=GET>
+                        <label>Sort by
+                        <select name="sort-by" id="sort-by">
+                            <option value="recent">Most Recent</option>
+                            <option value="rating">Rating</option>
+                        </select></label>
+                    </form>
+                </span>
+                <span>
+                    <form id="tag-form">
+                        <label>Category
+                        <select name="tag" id="tag" onchange="this.form.submit()">
+                            <option selected disabled>Choose</option>
+                            {% for tag in tags %}
+                            <option>{{tag['ttype']}}</option>
+                            {% endfor %}
+                        </select></label>
+                    </form>
+                </span>
+                <!-- <span id="filter-tag"></span> -->
+            </div>
+            {% endif %}
+        {% endblock %}
+        
+        <!-- WHY are flashes showing up before options -->
+        {% block flash %}
+            {{super()}}
+        {%endblock %}
+
+        {% block content %}
+
+            <!-- MASONRY -->
+            <div id="masonry" class="grid">
+                
+                {% for post in posts %}
+                <div class="grid-item">
+                    <a href="{{url_for('post', pid=post.pid)}}" class = "custom-card"> 
+                        <div class="item card">
+                            <!-- image -->
+
+                            <!-- <div class="card-image-top img-fluid post-image"> -->
+                            <img alt = "post image" class="card-image-top img-fluid rounded-top post-image" 
+                                src="{{url_for('static',filename=post['imgPath'])}}">
+                            <!-- </div> -->
+                        
+                            <div class="card-body">
+                                <h5 class="card-title">{{post['pname']}}</h5>
+                                <!-- rating -->
+                                <p class="card-text rating" data-rating="{{post['rating']}}"></p>
+                                <p class="card-text">{{post['review'] | truncate(150)}}</p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+
+            {% endfor %}
+            </div>
+
+
+            <div id="users" class="masonry card-columns">
+            {% for user in users %}
+            <a href="{{url_for('profile', username=user.username)}}" class = "custom-card"> 
+                <div class="item card">
+                 {# ... 
+                    <!-- <img src="{{post['imgPath']}}"> -->
+                    <!-- <img class="card-image-top img-fluid" src="{{url_for('static',filename=post['imgPath'])}}">
+                     -->#}
+                    <div class="card-body">
+                        <h5 class="card-title">{{user['username']}}</h5>
+                        {#
+                        <!-- rating -->
+                        <!-- <p class="card-text rating" data-rating="{{post['rating']}}"></p>
+                        <p class="card-text">{{post['review'] | truncate(150)}}</p> -->#}
+                    </div>
+                </div>
+                </a>
+                {% endfor %}
+          
+            </div>
+
+        {% endblock %}
+
+        {% block scripts %}
+           {{super()}}
+            <script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-3.4.1.min.js"></script>
+            <script src="{{url_for('static',filename='home.js')}}"></script>
+            <script src="https://unpkg.com/masonry-layout@4/dist/masonry.pkgd.js"></script>
+            <script>
+                $(document).ready(function() {       
+
+                    var URL_SORT_RATING = "{{url_for('sort_rating')}}" // not used
+                    var query;
+
+                    // wait for page to load, otherwise doesn't workj
+                    window.addEventListener('load', function () {
+                        colWidth = ($("#masonry").innerWidth() - 10*(parseFloat($(".grid-item").css("margin").slice(0,-2))))/5.0;
+
+                        // need to set the height of each grid item otherwise css messes up
+                        $(".grid-item").each(function() {
+                            $(this).height($(this).find(".custom-card")+50);
+                            $(this).width(colWidth);
+                        
+                        });
+                        // for 5 columns, make dynamic later
+                        
+                        $('.grid').masonry({
+                            itemSelector: '.grid-item',
+                            columnWidth: '.grid-item',
+                            horizontalOrder: true
+                        });
+                    });
+
+                    // select the right option in the sort by dropdown
+                    {% if sort_by is defined %}
+
+                        $("#sort-by").val("{{sort_by}}");
+                        
+                    {% endif %}
+
+                    // submit sort by form when value is changed
+                    $("#sort-by").change(function () {
+
+                        // check if there was search query
+                        {% if query is defined %}
+                            query = "{{query}}";
+                    
+                        {% else %}
+
+                            query = null;
+
+                        {% endif %}
+
+
+                        // add form submit action depending on where dropdown change was called
+                        {% if search is defined %}
+                            $("#sort-by-form").attr("action", "{{url_for('search')}}");
+                            
+                        // should also check tag here in the future
+
+                        // {% elif tags is defined%}
+                        //     $("#sort-by-form").attr("action", "{{url_for('show_tag_posts', tag=tag)}}");
+
+                        {% else %}
+                            $("#sort-by-form").attr("action", "{{url_for('home')}}");
+
+                        {% endif %}
+
+                        $("#sort-by-form").submit();
+                    })
+
+                    // add query and type to form
+                    // some of this is probably unecesary and makes the url ugly
+                    $("#sort-by-form").submit( function(eventObj) {
+                        stuff = '<input type="hidden" name="query" value=' + query + '/>'
+                        stuff2 = '<input type="hidden" name="type" value=posts/>'
+                        $(this).append(stuff);   
+                        $(this).append(stuff2)
+                        return true;
+                });    
+                        
+            })
+              
+
+            </script>
+        {% endblock %}   
+    
+</body>
+</html>
+
+
